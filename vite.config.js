@@ -3,7 +3,7 @@ import { nodePolyfills } from 'vite-plugin-node-polyfills';
 import path from 'path';
 
 export default defineConfig({
-  base: './',
+  base: '/arduino-ide/', // Matches GitHub repository name
   define: {
     '__filename': '"/"',
     '__dirname': '"/"',
