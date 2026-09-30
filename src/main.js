@@ -191,16 +191,23 @@ let activePort = null;
 const statusEl = document.getElementById('status');
 const connectBtn = document.getElementById('connectBtn');
 const runBtn = document.getElementById('runBtn');
+const stopBtn = document.getElementById('stopBtn');
 
 function setStatus(text) {
   statusEl.innerText = 'Status: ' + text;
 }
 
 function resetConnectionUI(message) {
+  // The port is dying/dead — drop the board reference first so the cleanup
+  // below skips the SYSTEM_RESET write into a closed serial connection.
   activeBoard = null;
   activePort = null;
+  // Stop leftover blink/sweep timers so nothing keeps writing into the
+  // closed port (and the next connection starts from a clean slate).
+  stopPreviousRun();
   setStatus(message);
   runBtn.disabled = true;
+  stopBtn.disabled = true;
   connectBtn.disabled = false;
   connectBtn.innerText = '1. Connect Arduino';
 }
@@ -244,6 +251,7 @@ connectBtn.addEventListener('click', async () => {
       log('johnny-five: board READY');
       setStatus('Connected & Ready');
       runBtn.disabled = false;
+      stopBtn.disabled = false;
       connectBtn.innerText = 'Connected to USB';
     });
 
@@ -262,14 +270,127 @@ connectBtn.addEventListener('click', async () => {
   }
 });
 
+// ---------------------------------------------------------------------------
+// 4. Run Isolation — every "Run" (and "Stop") starts from a clean slate.
+//
+// Clicking Run executes the editor's CURRENT code, but johnny-five objects
+// keep running after that function returns: led.blink() registers a raw
+// setInterval that toggles its pin forever (lib/led/led.js), servo.sweep()
+// does the same, and board.wait() chains park timeouts. Without cleanup, a
+// second run STACKS a second blink timer on the same pin — two out-of-phase
+// timers flicker the LED erratically, and reverting the code to an earlier
+// value cannot undo timers that are already scheduled.
+//
+// Three-part cleanup before each new run (and on Stop):
+//   a. stop + release every johnny-five object the previous run created,
+//   b. clear every timer the previous run scheduled (whichever library),
+//   c. Firmata SYSTEM_RESET so the board's pins return to power-on defaults.
+// ---------------------------------------------------------------------------
+const runTimers = new Set();     // timer ids created since the first Run
+const runComponents = new Set(); // five.* objects created by student code
+let runActive = false;           // flips on at the first Run and stays on
+
+const nativeSetTimeout = window.setTimeout;
+const nativeSetInterval = window.setInterval;
+const nativeClearTimeout = window.clearTimeout;
+const nativeClearInterval = window.clearInterval;
+
+window.setTimeout = function (...args) {
+  const id = nativeSetTimeout.apply(window, args);
+  if (runActive) runTimers.add(id);
+  return id;
+};
+window.setInterval = function (...args) {
+  const id = nativeSetInterval.apply(window, args);
+  if (runActive) runTimers.add(id);
+  return id;
+};
+
+// Browser timer ids share one namespace, so both clears are tried; clearing
+// an already-cleared id is a no-op.
+function clearRunTimers() {
+  for (const id of runTimers) {
+    nativeClearTimeout.call(window, id);
+    nativeClearInterval.call(window, id);
+  }
+  runTimers.clear();
+}
+
+// Students receive this wrapped `five`: identical API, but every constructed
+// component registers itself so the next run (or Stop) can shut it down.
+// Wrappers are cached so repeated `five.Led` lookups stay identity-stable.
+const wrappedCtors = new WeakMap();
+const runFive = new Proxy(five, {
+  get(target, prop) {
+    const value = Reflect.get(target, prop);
+    if (typeof value !== 'function') return value;
+    let ctor = wrappedCtors.get(value);
+    if (!ctor) {
+      ctor = new Proxy(value, {
+        construct(Real, args) {
+          const instance = new Real(...args);
+          runComponents.add(instance);
+          return instance;
+        }
+      });
+      wrappedCtors.set(value, ctor);
+    }
+    return ctor;
+  }
+});
+
+function stopPreviousRun() {
+  // a. Ask each leftover component to stop its own behaviour first.
+  for (const instance of runComponents) {
+    for (const method of ['stop', 'stopServo', 'off']) {
+      try {
+        if (typeof instance[method] === 'function') instance[method]();
+      } catch (err) {
+        log('cleanup: ' + method + '() failed on a leftover component:', err.message);
+      }
+    }
+  }
+  runComponents.clear();
+
+  // b. Belt and braces: kill every scheduled timer from previous runs, even
+  //    those owned by objects that had no stop() method. (Editor timers
+  //    created after the first Run are cleared too — Monaco recreates any it
+  //    still needs on the next interaction.)
+  clearRunTimers();
+
+  // c. Firmata SYSTEM_RESET (0xFF): StandardFirmata re-initialises every pin
+  //    to its power-on state, clearing PWM/SERVO modes and latched HIGH/LOW
+  //    values left behind by the previous run. The parser already tolerates
+  //    the duplicate version/capability reports the board sends in response.
+  if (activeBoard && activeBoard.io && typeof activeBoard.io.reset === 'function') {
+    try {
+      activeBoard.io.reset();
+      log('Firmata SYSTEM_RESET sent — board pins back to power-on defaults');
+    } catch (err) {
+      log('Firmata SYSTEM_RESET failed:', err.message);
+    }
+  }
+}
+
 runBtn.addEventListener('click', () => {
   if (!activeBoard) return;
+
+  // Clean slate: shut down leftovers from any previous run BEFORE the
+  // editor's current code executes.
+  stopPreviousRun();
+  runActive = true; // from the first Run on, track every new timer
 
   const studentCode = window.editor.getValue();
   try {
     const executeStudentCode = new Function('five', 'board', studentCode);
-    executeStudentCode(five, activeBoard);
+    executeStudentCode(runFive, activeBoard);
   } catch (e) {
     alert("Error in your code: " + e.message);
   }
+});
+
+stopBtn.addEventListener('click', () => {
+  if (!activeBoard) return;
+  stopPreviousRun();
+  setStatus('Stopped — board ready for new code');
 });
