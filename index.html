@@ -4,15 +4,10 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Arduino Web IDE</title>
-    <style>
-      body { margin: 0; font-family: sans-serif; display: flex; flex-direction: column; height: 100vh; }
-      #toolbar { padding: 15px; background: #252526; color: white; display: flex; gap: 15px; align-items: center; }
-      button { padding: 8px 16px; cursor: pointer; background: #0e639c; color: white; border: none; border-radius: 4px; }
-      button:disabled { background: #555; cursor: not-allowed; }
-      #editor-container { flex-grow: 1; width: 100%; }
-    </style>
+    <style>body{flex-direction:column;height:100vh;margin:0;font-family:sans-serif;display:flex}#toolbar{color:#fff;background:#252526;align-items:center;gap:15px;padding:15px;display:flex}button{cursor:pointer;color:#fff;background:#0e639c;border:none;border-radius:4px;padding:8px 16px}button:disabled{cursor:not-allowed;background:#555}#editor-container{flex-grow:1;width:100%}</style>
     <!-- Pulls in the VS Code editor engine -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.39.0/min/vs/loader.min.js"></script>
+    <script type="module" crossorigin src="/arduino-ide/assets/index-D8fKkccg.js"></script>
   </head>
   <body>
     <div id="toolbar">
@@ -22,7 +17,6 @@
     </div>
     
     <div id="editor-container"></div>
-    
-    <script type="module" src="/src/main.js"></script>
+    
   </body>
 </html>
