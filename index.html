@@ -7,7 +7,7 @@
          (connect-src 'self'), load external scripts, or exfiltrate via forms/images.
          'unsafe-eval' is required by design: the Run handler executes student code
          via new Function(). blob: is required for Monaco's editor web worker. -->
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-eval' blob:; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self'; worker-src blob:; object-src 'none'; form-action 'none'; base-uri 'none'">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-eval' blob:; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self'; worker-src 'self' blob:; object-src 'none'; form-action 'none'; base-uri 'none'">
     <title>Arduino Web IDE</title>
     <style>
       body { margin: 0; font-family: sans-serif; display: flex; flex-direction: column; height: 100vh; }
