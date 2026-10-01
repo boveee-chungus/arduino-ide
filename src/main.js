@@ -169,7 +169,9 @@ class WebSerialTransport extends EventEmitter {
 }
 
 // 2. Initialize the Monaco Code Editor
-require.config({ paths: { 'vs': 'monaco' }}); // self-hosted copy of Monaco 0.39.0 (public/monaco)
+// Monaco 0.39.0 is self-hosted under /vs/ — the official AMD layout. Do NOT
+// add a paths mapping like {'vs': 'monaco'}: the editor worker's internal
+// loader resolves 'vs/...' from the site root and cannot see page config.
 require(['vs/editor/editor.main'], function() {
   window.editor = monaco.editor.create(document.getElementById('editor-container'), {
     value: [
