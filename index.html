@@ -11,8 +11,8 @@
       button:disabled { background: #555; cursor: not-allowed; }
       #editor-container { flex-grow: 1; width: 100%; }
     </style>
-    <!-- Pulls in the VS Code editor engine -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.39.0/min/vs/loader.min.js"></script>
+    <!-- Pulls in the VS Code editor engine (self-hosted — no external requests) -->
+    <script src="monaco/loader.min.js"></script>
   </head>
   <body>
     <div id="toolbar">

@@ -169,7 +169,7 @@ class WebSerialTransport extends EventEmitter {
 }
 
 // 2. Initialize the Monaco Code Editor
-require.config({ paths: { 'vs': 'https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.39.0/min/vs' }});
+require.config({ paths: { 'vs': 'monaco' }}); // self-hosted copy of Monaco 0.39.0 (public/monaco)
 require(['vs/editor/editor.main'], function() {
   window.editor = monaco.editor.create(document.getElementById('editor-container'), {
     value: [
