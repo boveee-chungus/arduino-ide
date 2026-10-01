@@ -394,3 +394,152 @@ stopBtn.addEventListener('click', () => {
   stopPreviousRun();
   setStatus('Stopped — board ready for new code');
 });
+
+// ---------------------------------------------------------------------------
+// 5. Sample library — the toolbar dropdown inserts starter code at the cursor.
+//
+// Every sample below is verified to work with StandardFirmata on an Uno R3
+// and the pins noted in its header comment. PWM is only available on pins
+// 3, 5, 6, 9, 10 and 11 on the Uno.
+// ---------------------------------------------------------------------------
+const SAMPLES = {
+  blink: `// Blink the onboard LED (pin 13).
+const led = new five.Led(13);
+led.blink(200);`,
+
+  strobe: `// Strobe two LEDs at different speeds.
+// Wiring: LEDs (with ~220 ohm resistors) on pins 13 and 12.
+const ledA = new five.Led(13);
+const ledB = new five.Led(12);
+ledA.strobe(300);
+ledB.strobe(500);
+// Press "3. Stop" to halt both.`,
+
+  fade: `// Fade an LED in and out forever.
+// NOTE: fading needs a PWM pin — 3, 5, 6, 9, 10 or 11.
+// (Pin 13 has no PWM on the Uno.)
+const led = new five.Led(9);
+led.fadeIn();
+
+board.wait(2000, () => {
+  led.fadeOut();
+  board.wait(2000, () => led.fadeIn());
+});`,
+
+  brightness: `// Set LED brightness directly: 0 (off) to 255 (full).
+// PWM pin required: 3, 5, 6, 9, 10 or 11.
+const led = new five.Led(9);
+led.brightness(128);`,
+
+  buttonToggle: `// Each button press toggles the onboard LED.
+// Wiring: pushbutton between pin 2 and GND (internal pull-up is used).
+const led = new five.Led(13);
+const button = new five.Button(2);
+
+let isOn = false;
+button.on('press', () => {
+  isOn = !isOn;
+  if (isOn) {
+    led.on();
+  } else {
+    led.off();
+  }
+});`,
+
+  buttonLog: `// Log button press/release events.
+// Wiring: pushbutton between pin 2 and GND.
+const button = new five.Button(2);
+
+button.on('press', () => console.log('Button pressed'));
+button.on('release', () => console.log('Button released'));
+// Output appears in the browser console (F12 -> Console).`,
+
+  analogLog: `// Read an analog sensor on A0 (photoresistor, potentiometer, etc.).
+// Wiring: sensor voltage divider between 5V and GND, midpoint to A0.
+const sensor = new five.Sensor('A0');
+
+sensor.on('change', () => console.log('A0 value:', sensor.value));
+// Output appears in the browser console (F12 -> Console).`,
+
+  analogScale: `// Read a sensor on A0 and scale raw 0-1023 to 0-100%.
+const sensor = new five.Sensor({ pin: 'A0', threshold: 10 });
+
+sensor.scale([0, 100]).on('change', () => {
+  console.log('Sensor: ' + Math.round(sensor.scaled) + '%');
+});`,
+
+  servoSweep: `// Sweep a servo back and forth between 0 and 180 degrees.
+// Wiring: servo signal (orange) -> pin 9, red -> 5V, brown -> GND.
+// Small servos can run off the Uno's 5V; larger ones need their own
+// power supply that shares GND with the Uno.
+const servo = new five.Servo(9);
+servo.sweep();`,
+
+  servoButton: `// Each button press moves the servo between 0 and 180 degrees.
+// Wiring: servo signal -> pin 9, button between pin 2 and GND.
+const servo = new five.Servo(9);
+const button = new five.Button(2);
+
+let angle = 0;
+button.on('press', () => {
+  angle = (angle === 0) ? 180 : 0;
+  servo.to(angle);
+});`,
+
+  motor: `// Run a DC motor through an H-bridge driver (L293D, L9110, etc.).
+// Wiring: driver PWM/enable input -> pin 3, direction input -> pin 12.
+// The motor itself is powered by your driver's motor supply.
+const motor = new five.Motor({ pins: { pwm: 3, dir: 12 } });
+
+motor.forward(200);
+board.wait(2000, () => {
+  motor.reverse(150);
+  board.wait(2000, () => motor.stop());
+});`,
+
+  relay: `// Click a relay on and off every 2 seconds.
+// Wiring: relay control pin -> 7 (most relay modules are active-high).
+const relay = new five.Relay(7);
+
+setInterval(() => relay.toggle(), 2000);
+// Press "3. Stop" to halt the clicking.`,
+
+  rgbCycle: `// Cycle an RGB LED (common cathode) through the rainbow.
+// Wiring: red -> 9, green -> 10, blue -> 11 (all PWM pins), longest leg -> GND.
+const rgb = new five.Led.RGB({ pins: { red: 9, green: 10, blue: 11 } });
+
+const colors = ['red', 'orange', 'yellow', 'green', 'cyan', 'blue', 'violet', 'white'];
+let i = 0;
+setInterval(() => {
+  rgb.color(colors[i % colors.length]);
+  i++;
+}, 1000);`,
+
+  i2cStub: `// I2C devices (character LCDs, IMUs, RTC clocks...) use two shared pins:
+//   SDA -> A4, SCL -> A5, plus 5V and GND from the Uno.
+//
+// Example: a 16x2 LCD on a PCF8574 I2C backpack (address 0x27 on most
+// backpacks — check the module's documentation or use an I2C scanner).
+//
+// const lcd = new five.LCD({ controller: 'PCF8574' });
+// lcd.cursor(0, 0).print('Hello, Hailie!');
+//
+// Uncomment the two lines above once your LCD is wired up.`
+};
+
+const samplesSelect = document.getElementById('samplesSelect');
+
+samplesSelect.addEventListener('change', () => {
+  const code = SAMPLES[samplesSelect.value];
+  if (!code || !window.editor) return;
+
+  // Insert at the cursor (replacing any active selection), like typing it.
+  const selection = window.editor.getSelection();
+  window.editor.executeEdits('sample', [
+    { range: selection, text: code, forceMoveMarkers: true }
+  ]);
+  window.editor.focus();
+
+  // Rewind to the placeholder so picking the same sample again re-fires.
+  samplesSelect.value = '';
+});

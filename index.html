@@ -3,12 +3,18 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!-- Browser-enforced lockdown: student-run code cannot make network requests
+         (connect-src 'self'), load external scripts, or exfiltrate via forms/images.
+         'unsafe-eval' is required by design: the Run handler executes student code
+         via new Function(). blob: is required for Monaco's editor web worker. -->
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-eval' blob:; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self'; worker-src blob:; object-src 'none'; form-action 'none'; base-uri 'none'">
     <title>Arduino Web IDE</title>
     <style>
       body { margin: 0; font-family: sans-serif; display: flex; flex-direction: column; height: 100vh; }
       #toolbar { padding: 15px; background: #252526; color: white; display: flex; gap: 15px; align-items: center; }
       button { padding: 8px 16px; cursor: pointer; background: #0e639c; color: white; border: none; border-radius: 4px; }
       button:disabled { background: #555; cursor: not-allowed; }
+      select { padding: 8px; background: #333; color: white; border: none; border-radius: 4px; max-width: 180px; }
       #editor-container { flex-grow: 1; width: 100%; }
     </style>
     <!-- Pulls in the VS Code editor engine (self-hosted — no external requests) -->
@@ -19,6 +25,39 @@
       <button id="connectBtn">1. Connect Arduino</button>
       <button id="runBtn" disabled>2. Run Code</button>
       <button id="stopBtn" disabled>3. Stop</button>
+      <select id="samplesSelect">
+        <option value="" selected>▾ Insert sample…</option>
+        <optgroup label="Digital out">
+          <option value="blink">Blink an LED</option>
+          <option value="strobe">Strobe patterns (2 LEDs)</option>
+        </optgroup>
+        <optgroup label="PWM (fade/brightness)">
+          <option value="fade">Fade an LED</option>
+          <option value="brightness">Set LED brightness</option>
+        </optgroup>
+        <optgroup label="Digital in (buttons)">
+          <option value="buttonToggle">Button toggles LED</option>
+          <option value="buttonLog">Button press/release log</option>
+        </optgroup>
+        <optgroup label="Analog in (sensors)">
+          <option value="analogLog">Read a sensor on A0</option>
+          <option value="analogScale">Scale sensor 0–100%</option>
+        </optgroup>
+        <optgroup label="Servos">
+          <option value="servoSweep">Sweep a servo</option>
+          <option value="servoButton">Button moves servo</option>
+        </optgroup>
+        <optgroup label="DC motors &amp; relays">
+          <option value="motor">Run a DC motor</option>
+          <option value="relay">Click a relay on/off</option>
+        </optgroup>
+        <optgroup label="RGB LEDs">
+          <option value="rgbCycle">Cycle RGB colors</option>
+        </optgroup>
+        <optgroup label="I2C devices">
+          <option value="i2cStub">I2C wiring starter</option>
+        </optgroup>
+      </select>
       <span id="status">Status: Disconnected</span>
     </div>
     
