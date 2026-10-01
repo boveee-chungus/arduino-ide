@@ -194,6 +194,8 @@ const statusEl = document.getElementById('status');
 const connectBtn = document.getElementById('connectBtn');
 const runBtn = document.getElementById('runBtn');
 const stopBtn = document.getElementById('stopBtn');
+const APP_VERSION = document.getElementById('version').textContent;
+log('Arduino Web IDE ' + APP_VERSION + ' — if the site misbehaves, hard-refresh (Ctrl+F5); GitHub Pages caches pages for up to 10 minutes.');
 
 function setStatus(text) {
   statusEl.innerText = 'Status: ' + text;
